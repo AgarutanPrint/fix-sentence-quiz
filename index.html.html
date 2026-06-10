@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fix the Sentence Quiz 🔍</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#2BBFB0;--navy:#1B3A6B;--yellow:#FFD94A;--coral:#FF6B6B;
+    --green:#27AE60;--purple:#7B5EA7;--orange:#F39C12;--bg:#FEFDF6;
+    --white:#FFFFFF;--gray:#666666;--lgray:#F0F0E8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+    background-image:radial-gradient(circle,#2BBFB020 1px,transparent 1px),radial-gradient(circle,#FFD94A20 1px,transparent 1px);
+    background-size:40px 40px,60px 60px;pointer-events:none;z-index:0;}
+  .container{max-width:680px;margin:0 auto;padding:20px 16px 40px;position:relative;z-index:1;}
+  .header{text-align:center;padding:24px 0 16px;}
+  .header h1{font-family:'Baloo 2',cursive;font-size:clamp(1.8rem,5vw,2.4rem);font-weight:800;color:var(--navy);}
+  .header h1 span{color:var(--teal);}
+  .header p{color:var(--gray);font-size:0.95rem;margin-top:6px;}
+  .screen{display:none;}.screen.active{display:block;animation:fadeIn 0.3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .card{background:var(--white);border-radius:20px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.08);margin-bottom:16px;}
+  
+  /* Section select */
+  .section-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
+  .section-btn{background:var(--white);border:2.5px solid var(--lgray);border-radius:16px;padding:16px 12px;cursor:pointer;text-align:center;transition:all 0.2s;font-family:'Nunito',sans-serif;}
+  .section-btn:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.1);}
+  .sec-emoji{font-size:1.8rem;display:block;margin-bottom:6px;}
+  .sec-num{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gray);}
+  .sec-title{font-size:0.82rem;font-weight:700;color:var(--navy);margin-top:2px;line-height:1.3;}
+  .sec-rules{font-size:0.7rem;color:var(--gray);margin-top:4px;line-height:1.4;}
+  .s1{border-color:#2BBFB0;background:#D6F5F2;}
+  .s2{border-color:#FFD94A;background:#FFF8CC;}
+  .s3{border-color:#FF6B6B;background:#FFE8E8;}
+  .s4{border-color:#7B5EA7;background:#F0EBF8;}
+  .s5{border-color:#1B3A6B;background:#E8EDF5;grid-column:1/-1;}
+
+  /* Rules badge strip */
+  .rules-strip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .rule-chip{padding:4px 10px;border-radius:999px;font-size:0.75rem;font-weight:700;}
+  .rule-chip.active{background:var(--navy);color:white;}
+  .rule-chip.inactive{background:var(--lgray);color:var(--gray);}
+
+  /* Progress */
+  .progress-wrap{background:var(--lgray);border-radius:999px;height:10px;margin:10px 0;overflow:hidden;}
+  .progress-bar{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--teal),var(--navy));transition:width 0.4s ease;}
+  .progress-info{display:flex;justify-content:space-between;font-size:0.8rem;color:var(--gray);font-weight:600;}
+  .score-badge{display:inline-flex;align-items:center;gap:6px;background:var(--yellow);border-radius:999px;padding:6px 14px;font-weight:800;font-size:0.9rem;color:var(--navy);}
+  .section-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+  .section-title-tag{background:var(--navy);color:white;border-radius:999px;padding:6px 14px;font-size:0.8rem;font-weight:800;}
+
+  /* Question */
+  .q-label{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gray);margin-bottom:8px;}
+  .q-text{font-family:'Baloo 2',cursive;font-size:clamp(0.95rem,3vw,1.15rem);font-weight:700;color:var(--navy);margin-bottom:12px;line-height:1.4;}
+  .wrong-box{background:#FFE8E8;border:2px solid var(--coral);border-radius:12px;padding:12px 14px;font-size:1rem;color:var(--coral);font-weight:700;margin-bottom:14px;display:flex;align-items:flex-start;gap:8px;}
+  .wrong-box::before{content:'✗';font-size:1.1rem;flex-shrink:0;}
+
+  /* Word chips for word order */
+  .word-chips-q{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .word-chip-q{background:var(--navy);color:white;border-radius:8px;padding:6px 12px;font-weight:700;font-size:0.9rem;cursor:pointer;transition:all 0.2s;user-select:none;}
+  .word-chip-q:hover{background:var(--teal);transform:translateY(-2px);}
+  .word-chip-q.used{background:var(--lgray);color:var(--gray);cursor:not-allowed;transform:none;}
+  .answer-chips{min-height:44px;background:var(--lgray);border-radius:12px;padding:8px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;border:2px dashed #CCCCCC;}
+  .answer-chip{background:var(--teal);color:white;border-radius:8px;padding:6px 12px;font-weight:700;font-size:0.9rem;cursor:pointer;transition:all 0.2s;}
+  .answer-chip:hover{background:var(--coral);}
+  .answer-placeholder{color:#AAAAAA;font-size:0.85rem;font-weight:600;align-self:center;}
+
+  /* Input */
+  .answer-input{width:100%;border:2.5px solid var(--lgray);border-radius:12px;padding:12px 14px;font-size:1rem;font-family:'Nunito',sans-serif;font-weight:600;color:var(--navy);background:var(--white);outline:none;transition:border-color 0.2s;margin-bottom:8px;}
+  .answer-input:focus{border-color:var(--teal);}
+  .answer-input.correct{border-color:var(--green);background:#E8F8EE;}
+  .answer-input.almost{border-color:var(--orange);background:#FEF5E7;}
+  .answer-input.wrong{border-color:var(--coral);background:#FFE8E8;}
+
+  /* Choices */
+  .choices{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+  .choice-btn{background:var(--white);border:2.5px solid var(--lgray);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:600;color:var(--navy);transition:all 0.2s;display:flex;align-items:center;gap:10px;}
+  .choice-btn:hover:not(:disabled){border-color:var(--teal);background:#D6F5F2;transform:translateX(3px);}
+  .choice-letter{width:26px;height:26px;border-radius:50%;background:var(--lgray);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;flex-shrink:0;}
+  .choice-btn.correct-choice{border-color:var(--green);background:#E8F8EE;}
+  .choice-btn.correct-choice .choice-letter{background:var(--green);color:white;}
+  .choice-btn.wrong-choice{border-color:var(--coral);background:#FFE8E8;}
+  .choice-btn.wrong-choice .choice-letter{background:var(--coral);color:white;}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 24px;border-radius:12px;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;transition:all 0.2s;width:100%;}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+  .btn-teal{background:var(--teal);color:white;}
+  .btn-navy{background:var(--navy);color:white;}
+  .btn-outline{background:transparent;border:2.5px solid var(--lgray);color:var(--navy);}
+  .btn-sm{padding:8px 14px;font-size:0.82rem;width:auto;}
+  .btn-row{display:flex;gap:10px;}.btn-row .btn{flex:1;}
+  .hint-btn{background:#FFF8CC;border:2px solid var(--yellow);color:var(--navy);border-radius:10px;padding:8px 14px;cursor:pointer;font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:800;transition:all 0.2s;white-space:nowrap;}
+  .hint-btn:hover{background:var(--yellow);}
+  .hint-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .exit-btn{background:#FFE8E8;border:2px solid var(--coral);color:var(--coral);border-radius:10px;padding:6px 12px;cursor:pointer;font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:800;}
+
+  /* Feedback */
+  .feedback{border-radius:12px;padding:13px 15px;margin-bottom:12px;font-weight:700;display:none;animation:popIn 0.3s ease;}
+  @keyframes popIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+  .feedback.show{display:block;}
+  .feedback.correct-fb{background:#E8F8EE;border:2px solid var(--green);color:#1a7a40;}
+  .feedback.almost-fb{background:#FEF5E7;border:2px solid var(--orange);color:#935a00;}
+  .feedback.wrong-fb{background:#FFE8E8;border:2px solid var(--coral);color:#c0392b;}
+  .fb-title{font-size:1.05rem;margin-bottom:5px;}
+  .fb-explain{font-weight:600;font-size:0.86rem;line-height:1.5;}
+  .fb-correct{font-size:0.86rem;margin-top:6px;padding:7px 10px;background:rgba(255,255,255,0.6);border-radius:8px;}
+
+  /* Word analysis */
+  .word-analysis{margin-bottom:10px;display:none;}
+  .wa-label{font-size:0.72rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+  .word-highlight{display:flex;flex-wrap:wrap;gap:5px;}
+  .wchip{padding:3px 9px;border-radius:7px;font-weight:700;font-size:0.82rem;}
+  .wchip.ok{background:#E8F8EE;border:1.5px solid var(--green);color:#1a7a40;}
+  .wchip.bad{background:#FFE8E8;border:1.5px solid var(--coral);color:#c0392b;}
+
+  /* Results */
+  .result-circle{width:110px;height:110px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 8px 24px rgba(43,191,176,0.3);}
+  .result-score{font-family:'Baloo 2',cursive;font-size:2rem;font-weight:800;color:white;line-height:1;}
+  .result-label{font-size:0.65rem;color:rgba(255,255,255,0.8);font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+  .stars{font-size:1.8rem;text-align:center;margin-bottom:10px;letter-spacing:4px;}
+  .result-message{text-align:center;font-family:'Baloo 2',cursive;font-size:1.2rem;font-weight:700;color:var(--navy);margin-bottom:18px;}
+  .result-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;}
+  .stat-box{background:var(--lgray);border-radius:12px;padding:10px 6px;text-align:center;}
+  .stat-val{font-family:'Baloo 2',cursive;font-size:1.3rem;font-weight:800;color:var(--navy);}
+  .stat-lbl{font-size:0.68rem;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+  .tip-box{background:#FFF8CC;border:2px solid var(--yellow);border-radius:12px;padding:11px 13px;font-size:0.83rem;color:var(--navy);font-weight:600;margin-bottom:12px;}
+
+  /* Confetti */
+  .confetti-wrap{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;}
+  .confetti-piece{position:absolute;animation:confettiFall linear forwards;}
+  @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+  @media(max-width:400px){.section-grid{grid-template-columns:1fr;}.s5{grid-column:1;}.btn-row{flex-direction:column;}}
+
+  /* Input row */
+  .input-action-row{display:flex;gap:8px;margin-bottom:12px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🔍 Fix the <span>Sentence</span> Quiz</h1>
+    <p>Learn the rules step by step — each section builds on the last!</p>
+  </div>
+
+  <!-- SCREEN 1: Select -->
+  <div class="screen active" id="screen-select">
+    <div class="card">
+      <div class="q-label">📚 Choose Your Section</div>
+      <div class="section-grid">
+        <button class="section-btn s1" onclick="startSection(1)">
+          <span class="sec-emoji">📝</span>
+          <div class="sec-num">Section 1</div>
+          <div class="sec-title">Word Order</div>
+          <div class="sec-rules">Checks: word order</div>
+        </button>
+        <button class="section-btn s2" onclick="startSection(2)">
+          <span class="sec-emoji">🔤</span>
+          <div class="sec-num">Section 2</div>
+          <div class="sec-title">Capitalization</div>
+          <div class="sec-rules">Checks: word order + capitals</div>
+        </button>
+        <button class="section-btn s3" onclick="startSection(3)">
+          <span class="sec-emoji">❓</span>
+          <div class="sec-num">Section 3</div>
+          <div class="sec-title">Punctuation</div>
+          <div class="sec-rules">Checks: order + capitals + punctuation</div>
+        </button>
+        <button class="section-btn s4" onclick="startSection(4)">
+          <span class="sec-emoji">🏃</span>
+          <div class="sec-num">Section 4</div>
+          <div class="sec-title">Verb Mistakes</div>
+          <div class="sec-rules">Checks: all 4 rules</div>
+        </button>
+        <button class="section-btn s5" onclick="startSection(5)">
+          <span class="sec-emoji">🌟</span>
+          <div class="sec-num">Section 5</div>
+          <div class="sec-title">Mixed Practice — All Rules!</div>
+          <div class="sec-rules">Checks: everything together</div>
+        </button>
+      </div>
+    </div>
+    <div class="tip-box">💡 <strong>Tip:</strong> Work through sections in order — each section adds a new rule to check!</div>
+  </div>
+
+  <!-- SCREEN 2: Quiz -->
+  <div class="screen" id="screen-quiz">
+    <div class="section-bar">
+      <span class="section-title-tag" id="quiz-section-tag">Section 1</span>
+      <span class="score-badge">⭐ <span id="score-display">0</span> pts</span>
+      <button class="exit-btn" onclick="exitQuiz()">🏠 Exit</button>
+    </div>
+
+    <!-- Active rules strip -->
+    <div class="rules-strip" id="rules-strip"></div>
+
+    <div class="progress-info">
+      <span id="q-counter">Question 1 of 10</span>
+      <span id="q-percent">0%</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+
+    <div class="card">
+      <div class="q-label" id="q-type-label">Fix the Sentence</div>
+      <div class="q-text" id="q-text"></div>
+      <div class="wrong-box" id="q-wrong" style="display:none"></div>
+
+      <!-- Word order drag area -->
+      <div id="wordorder-area" style="display:none">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--gray);margin-bottom:6px;">Tap words to build the sentence:</div>
+        <div class="answer-chips" id="answer-chips"><span class="answer-placeholder" id="chips-placeholder">Tap words below to add them here...</span></div>
+        <div class="word-chips-q" id="word-chips-q"></div>
+        <div class="input-action-row">
+          <button class="btn btn-teal" onclick="checkWordOrder()" style="flex:1">✅ Check</button>
+          <button class="hint-btn" id="hint-btn-wo" onclick="useHintWO()">💡 Hint</button>
+          <button class="hint-btn" onclick="clearWordOrder()" style="background:#FFE8E8;border-color:var(--coral);">🗑️ Clear</button>
+        </div>
+      </div>
+
+      <!-- Text input area -->
+      <div id="input-area" style="display:none">
+        <input type="text" class="answer-input" id="answer-input"
+               placeholder="Type the corrected sentence here..."
+               onkeydown="if(event.key==='Enter') checkAnswer()">
+        <div class="input-action-row">
+          <button class="btn btn-teal btn-sm" onclick="checkAnswer()" style="flex:1">✅ Check</button>
+          <button class="hint-btn" id="hint-btn" onclick="useHint()">💡 Hint (-5pts)</button>
+        </div>
+        <div id="hint-text" style="display:none;font-size:0.8rem;color:var(--orange);font-weight:700;margin-bottom:8px;padding:6px 10px;background:#FEF5E7;border-radius:8px;"></div>
+      </div>
+
+      <!-- Multiple choice -->
+      <div class="choices" id="choices-area" style="display:none"></div>
+
+      <!-- Word analysis -->
+      <div class="word-analysis" id="word-analysis">
+        <div class="wa-label">Word Check:</div>
+        <div class="word-highlight" id="word-chips-check"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="feedback" id="feedback">
+        <div class="fb-title" id="fb-title"></div>
+        <div class="fb-explain" id="fb-explain"></div>
+        <div class="fb-correct" id="fb-correct" style="display:none"></div>
+      </div>
+
+      <button class="btn btn-navy" id="next-btn" style="display:none;margin-top:4px;" onclick="nextQuestion()">Next Question →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: Results -->
+  <div class="screen" id="screen-results">
+    <div class="card" style="text-align:center">
+      <div class="result-circle">
+        <div class="result-score" id="final-score">0</div>
+        <div class="result-label">points</div>
+      </div>
+      <div class="stars" id="stars-display">⭐⭐⭐</div>
+      <div class="result-message" id="result-message">Great job!</div>
+      <div class="result-stats">
+        <div class="stat-box"><div class="stat-val" id="stat-correct">0</div><div class="stat-lbl">✅ Correct</div></div>
+        <div class="stat-box"><div class="stat-val" id="stat-wrong">0</div><div class="stat-lbl">❌ Wrong</div></div>
+        <div class="stat-box"><div class="stat-val" id="stat-pct">0%</div><div class="stat-lbl">🎯 Score</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="retrySection()">🔄 Try Again</button>
+        <button class="btn btn-teal" onclick="backToMenu()">🏠 Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="confetti-wrap" id="confetti"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+// RULES CONFIG
+// ══════════════════════════════════════════════════
+const SECTION_RULES = {
+  1: { checks: ['order'],                              label: 'Section 1 — Word Order' },
+  2: { checks: ['order','capitals'],                   label: 'Section 2 — Capitalization' },
+  3: { checks: ['order','capitals','punctuation'],     label: 'Section 3 — Punctuation' },
+  4: { checks: ['order','capitals','punctuation','verbs'], label: 'Section 4 — Verb Mistakes' },
+  5: { checks: ['order','capitals','punctuation','verbs'], label: 'Section 5 — Mixed Practice' },
+};
+
+const RULE_LABELS = {
+  order:       '📝 Word Order',
+  capitals:    '🔤 Capitals',
+  punctuation: '❓ Punctuation',
+  verbs:       '🏃 Verbs',
+};
+
+// ══════════════════════════════════════════════════
+// QUIZ DATA
+// ══════════════════════════════════════════════════
+const SECTIONS = {
+  1: {
+    questions: [
+      // Section 1: ONLY check word order — ignore capitals and punctuation
+      {type:'wordorder', words:['I','love','reading','books'], answer:'I love reading books', explain:'Subject first, then verb, then object — "I love reading books" ✅'},
+      {type:'wordorder', words:['She','is','happy'], answer:'She is happy', explain:'"She is happy" — subject + verb + adjective ✅'},
+      {type:'wordorder', words:['My','brother','plays','football'], answer:'My brother plays football', explain:'"My brother plays football" — subject + verb + object ✅'},
+      {type:'wordorder', words:['This','is','a','dog'], answer:'This is a dog', explain:'"This is a dog" — subject + verb + object ✅'},
+      {type:'wordorder', words:['The','dog','runs','fast'], answer:'The dog runs fast', explain:'"The dog runs fast" — subject + verb + adverb ✅'},
+      {type:'choose', question:'Which sentence has the correct word order?', choices:['I love reading books.','Love I reading books.','Reading books I love.'], answer:0, explain:'"I love reading books" — subject first, then verb ✅'},
+      {type:'choose', question:'Which sentence has the correct word order?', choices:['Happy she is.','She is happy.','Is she happy.'], answer:1, explain:'"She is happy" — subject + verb + adjective ✅'},
+      {type:'choose', question:'Which sentence has the correct word order?', choices:['My plays brother football.','Football my brother plays.','My brother plays football.'], answer:2, explain:'"My brother plays football" — natural English word order ✅'},
+      {type:'wordorder', words:['We','go','to','school'], answer:'We go to school', explain:'"We go to school" — subject + verb + place ✅'},
+      {type:'choose', question:'Which sentence has the correct word order?', choices:['Runs Max very fast.','Very fast Max runs.','Max runs very fast.'], answer:2, explain:'"Max runs very fast" — subject + verb + adverb ✅'},
+    ]
+  },
+  2: {
+    questions: [
+      // Section 2: check word order + capitals
+      {type:'fix', wrong:'my name is pablo.', answer:'My name is Pablo.', explain:'my → My (start of sentence) / pablo → Pablo (name)', checks:['order','capitals']},
+      {type:'fix', wrong:'i have a red bag.', answer:'I have a red bag.', explain:'i → I (always capital)', checks:['order','capitals']},
+      {type:'fix', wrong:'we live in germany.', answer:'We live in Germany.', explain:'we → We (start) / germany → Germany (place name)', checks:['order','capitals']},
+      {type:'fix', wrong:'our teacher is called miss emma.', answer:'Our teacher is called Miss Emma.', explain:'our → Our (start) / miss emma → Miss Emma (title + name)', checks:['order','capitals']},
+      {type:'fix', wrong:'monday is my favorite day.', answer:'Monday is my favorite day.', explain:'monday → Monday (day of week)', checks:['order','capitals']},
+      {type:'choose', question:'Which sentence has ALL capitals correct?', choices:['My name is ali.','My name is Ali.','my name is Ali.'], answer:1, explain:'My (start) ✓  Ali (name) ✓'},
+      {type:'choose', question:'Which sentence has ALL capitals correct?', choices:['We live in italy.','We live in Italy.','we live in Italy.'], answer:1, explain:'We (start) ✓  Italy (place) ✓'},
+      {type:'fix', wrong:'my friend sara is here.', answer:'My friend Sara is here.', explain:'my → My (start) / sara → Sara (name)', checks:['order','capitals']},
+      {type:'choose', question:'Which sentence has ALL capitals correct?', choices:['My birthday is in January.','My Birthday is in January.','My birthday is in january.'], answer:0, explain:'My (start) ✓  January (month) ✓'},
+      {type:'fix', wrong:'my brother ali plays football.', answer:'My brother Ali plays football.', explain:'my → My (start) / ali → Ali (name)', checks:['order','capitals']},
+    ]
+  },
+  3: {
+    questions: [
+      // Section 3: check word order + capitals + punctuation
+      {type:'fix', wrong:'My dog is very fluffy', answer:'My dog is very fluffy.', explain:'Missing period at the end — every statement ends with a period!', checks:['order','capitals','punctuation']},
+      {type:'fix', wrong:'Can you help me please', answer:'Can you help me please?', explain:'Missing question mark — questions always end with ?', checks:['order','capitals','punctuation']},
+      {type:'fix', wrong:'We won the game', answer:'We won the game!', explain:'Missing exclamation mark — excited sentences end with !', checks:['order','capitals','punctuation']},
+      {type:'fix', wrong:'What time is it', answer:'What time is it?', explain:'Missing question mark — "What time is it?" is a question!', checks:['order','capitals','punctuation']},
+      {type:'fix', wrong:'i love my family so much', answer:'I love my family so much!', explain:'i → I (always capital) + missing exclamation mark!', checks:['order','capitals','punctuation']},
+      {type:'choose', question:'Which sentence has correct punctuation AND capitals?', choices:['Where are you.','Where are you!','Where are you?'], answer:2, explain:'"Where are you?" — question needs a question mark ✓'},
+      {type:'choose', question:'Which sentence has correct punctuation AND capitals?', choices:['I like oranges.','I like oranges?','I like oranges!'], answer:0, explain:'"I like oranges." — statement needs a period ✓'},
+      {type:'fix', wrong:'Oh no, i forgot my homework', answer:'Oh no, I forgot my homework!', explain:'i → I (always capital) + missing exclamation mark!', checks:['order','capitals','punctuation']},
+      {type:'choose', question:'Which sentence has correct punctuation AND capitals?', choices:['Wow that is amazing.','Wow that is amazing?','Wow that is amazing!'], answer:2, explain:'"Wow that is amazing!" — excited sentence needs ! ✓'},
+      {type:'fix', wrong:'where do you live', answer:'Where do you live?', explain:'where → Where (start of sentence) + missing question mark!', checks:['order','capitals','punctuation']},
+    ]
+  },
+  4: {
+    questions: [
+      // Section 4: check ALL rules including verbs
+      {type:'fix', wrong:'She play with her cat every day.', answer:'She plays with her cat every day.', explain:'play → plays (She/He/It → add s to verb)', checks:['order','capitals','punctuation','verbs']},
+      {type:'fix', wrong:'My brother watch TV every night.', answer:'My brother watches TV every night.', explain:'watch → watches (He → add es to verb)', checks:['order','capitals','punctuation','verbs']},
+      {type:'fix', wrong:'We go to the zoo yesterday.', answer:'We went to the zoo yesterday.', explain:'go → went (yesterday = past tense, irregular verb)', checks:['order','capitals','punctuation','verbs']},
+      {type:'fix', wrong:'He walk to school this morning.', answer:'He walked to school this morning.', explain:'walk → walked (this morning = past tense)', checks:['order','capitals','punctuation','verbs']},
+      {type:'fix', wrong:'The dog run after the ball.', answer:'The dog runs after the ball.', explain:'run → runs (The dog = He/It → add s)', checks:['order','capitals','punctuation','verbs']},
+      {type:'choose', question:'Which sentence has the correct verb?', choices:['He goes to school every day.','He go to school every day.','He going to school every day.'], answer:0, explain:'"He goes" — He/She/It → add s to verb ✓'},
+      {type:'choose', question:'Which sentence has the correct verb?', choices:['She liking ice cream.','She like ice cream.','She likes ice cream.'], answer:2, explain:'"She likes" — She → add s to verb ✓'},
+      {type:'fix', wrong:'We goed to the beach last summer.', answer:'We went to the beach last summer.', explain:'goed → went (irregular verb! "go" past tense is "went" not "goed")', checks:['order','capitals','punctuation','verbs']},
+      {type:'choose', question:'Which sentence has the correct verb?', choices:['They plays football.','They play football.','They playing football.'], answer:1, explain:'"They play" — They/We/I → no s needed ✓'},
+      {type:'fix', wrong:'She don\'t like vegetables.', answer:'She doesn\'t like vegetables.', explain:"don't → doesn't (She = doesn't, not don't)", checks:['order','capitals','punctuation','verbs']},
+    ]
+  },
+  5: {
+    questions: [
+      // Section 5: ALL rules — most challenging!
+      {type:'fix', wrong:'my dog love to play in the garden', answer:'My dog loves to play in the garden.', explain:'my → My (start) / love → loves (My dog = s) / missing period', checks:['order','capitals','punctuation','verbs']},
+      {type:'fix', wrong:'she don\'t like cold weather', answer:"She doesn't like cold weather.", explain:"she → She (start) / don't → doesn't (she) / missing period", checks:['order','capitals','punctuation','verbs']},
+      {type:'fix', wrong:'i visit my grandma last sunday', answer:'I visited my grandma last Sunday.', explain:'i → I / visit → visited (past tense) / sunday → Sunday / missing period', checks:['order','capitals','punctuation','verbs']},
+      {type:'fix', wrong:'he go to the library every friday', answer:'He goes to the library every Friday.', explain:'he → He (start) / go → goes (he) / friday → Friday / missing period', checks:['order','capitals','punctuation','verbs']},
+      {type:'fix', wrong:'my cat luna sleep on my bed every night', answer:'My cat Luna sleeps on my bed every night.', explain:'my → My (start) / luna → Luna (name) / sleep → sleeps (she) / missing period', checks:['order','capitals','punctuation','verbs']},
+      {type:'choose', question:'Which sentence has ALL mistakes fixed?', choices:['my sister love dancing.','My sister loves dancing.','My sister love dancing.'], answer:1, explain:'My (start) ✓  loves (she = s) ✓  period ✓'},
+      {type:'choose', question:'Which sentence has ALL mistakes fixed?', choices:['Where do you live?','where do you live?','Where do you live.'], answer:0, explain:'Where (start) ✓  ? (question mark) ✓'},
+      {type:'choose', question:'Which sentence has ALL mistakes fixed?', choices:['We was excited about the trip.','We were excited about the trip.','we were excited about the trip.'], answer:1, explain:'We (start) ✓  were (we = were, not was) ✓  period ✓'},
+      {type:'fix', wrong:'my birthday is in july', answer:'My birthday is in July.', explain:'my → My (start) / july → July (month) / missing period', checks:['order','capitals','punctuation','verbs']},
+      {type:'choose', question:'Which sentence has ALL mistakes fixed?', choices:['I visited my grandma last Sunday.','I visited my grandma last sunday.','i visited my grandma last Sunday.'], answer:0, explain:'I ✓  visited (past tense) ✓  Sunday (day) ✓  period ✓'},
+    ]
+  }
+};
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let currentSection=1, currentQ=0, score=0, correct=0, wrong=0;
+let answered=false, hintUsed=false, questions=[];
+let selectedWords=[], availableWords=[];
+
+// ══════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function norm(s){ return s.trim().replace(/\s+/g,' '); }
+function stripPunct(s){ return norm(s).replace(/[.?!]$/,''); }
+function stripPunctLower(s){ return stripPunct(s).toLowerCase(); }
+
+function checkSection(user, correct, checks){
+  // Smart cumulative checking based on what section teaches
+  // Normalize titles like Dr.Parker → Dr. Parker
+  function normalizeTitles(s){
+    return s.replace(/([A-Za-z]+\.?)([A-Z])/g, '$1 $2').replace(/\s+/g,' ').trim();
+  }
+  const u = normalizeTitles(norm(user));
+  const c = normalizeTitles(norm(correct));
+
+  // Build comparison string based on active checks
+  function prepForCheck(s, activeChecks){
+    let result = s;
+    // If punctuation not checked yet — strip it
+    if(!activeChecks.includes('punctuation')){
+      result = result.replace(/[.?!]$/,'');
+    }
+    // If capitals not checked yet — lowercase everything
+    if(!activeChecks.includes('capitals')){
+      result = result.toLowerCase();
+    }
+    return result.trim();
+  }
+
+  const uComp = prepForCheck(u, checks);
+  const cComp = prepForCheck(c, checks);
+
+  if(uComp === cComp) return {result:'correct'};
+
+  // Check if only punctuation is wrong (when punctuation IS being checked)
+  if(checks.includes('punctuation')){
+    const uNoPunct = stripPunct(u);
+    const cNoPunct = stripPunct(c);
+    // Capitals and content match, only punctuation differs
+    if(uNoPunct === cNoPunct){
+      return {result:'almost'};
+    }
+    // Content matches but capitals wrong
+    if(uNoPunct.toLowerCase() === cNoPunct.toLowerCase() && uNoPunct !== cNoPunct){
+      // Capitals wrong + maybe punctuation wrong too
+      return {result:'wrong'};
+    }
+  }
+
+  return {result:'wrong'};
+}
+
+function getWordAnalysis(u, c){
+  // Normalize: add space after Dr. Mr. Mrs. Miss. so they split correctly
+  function normalizeTitle(s){
+    return s.replace(/([A-Za-z]+\.?)([A-Z])/g, '$1 $2').replace(/\s+/g,' ').trim();
+  }
+  const uClean = normalizeTitle(norm(u).replace(/[.?!]$/,''));
+  const cClean = normalizeTitle(norm(c).replace(/[.?!]$/,''));
+  const uW = uClean.split(' ');
+  const cW = cClean.split(' ');
+  const res=[];
+  const maxL = Math.max(uW.length, cW.length);
+  for(let i=0;i<maxL;i++){
+    const uw=uW[i]||'';
+    const cw=cW[i]||'';
+    res.push({word:uw||cw, ok: uw===cw});
+  }
+  return res;
+}
+
+// ══════════════════════════════════════════════════
+// START
+// ══════════════════════════════════════════════════
+function startSection(n){
+  currentSection=n; currentQ=0; score=0; correct=0; wrong=0;
+  answered=false; hintUsed=false;
+  questions=[...SECTIONS[n].questions].sort(()=>Math.random()-0.5);
+
+  // Build rules strip
+  const strip = document.getElementById('rules-strip');
+  strip.innerHTML='';
+  const allRules=['order','capitals','punctuation','verbs'];
+  const activeRules = SECTION_RULES[n].checks;
+  allRules.forEach(r=>{
+    const chip=document.createElement('span');
+    chip.className='rule-chip '+(activeRules.includes(r)?'active':'inactive');
+    chip.textContent=RULE_LABELS[r];
+    strip.appendChild(chip);
+  });
+
+  showScreen('screen-quiz');
+  loadQuestion();
+}
+
+function loadQuestion(){
+  const q=questions[currentQ];
+  const total=questions.length;
+  const sec=SECTION_RULES[currentSection];
+
+  document.getElementById('quiz-section-tag').textContent=sec.label;
+  document.getElementById('score-display').textContent=score;
+  document.getElementById('q-counter').textContent=`Question ${currentQ+1} of ${total}`;
+  document.getElementById('q-percent').textContent=Math.round((currentQ/total)*100)+'%';
+  document.getElementById('progress-bar').style.width=((currentQ/total)*100)+'%';
+
+  answered=false; hintUsed=false; selectedWords=[]; availableWords=[];
+  document.getElementById('feedback').className='feedback';
+  document.getElementById('next-btn').style.display='none';
+  document.getElementById('input-area').style.display='none';
+  document.getElementById('choices-area').style.display='none';
+  document.getElementById('wordorder-area').style.display='none';
+  document.getElementById('word-analysis').style.display='none';
+  document.getElementById('q-wrong').style.display='none';
+  document.getElementById('hint-text').style.display='none';
+  document.getElementById('fb-correct').style.display='none';
+
+  if(q.type==='wordorder'){
+    document.getElementById('q-type-label').textContent='📝 Put the words in the correct order';
+    document.getElementById('q-text').textContent='Tap the words to build the sentence:';
+
+    // Shuffle words
+    availableWords=[...q.words].sort(()=>Math.random()-0.5);
+    selectedWords=[];
+
+    const chipsQ=document.getElementById('word-chips-q');
+    chipsQ.innerHTML='';
+    availableWords.forEach((w,i)=>{
+      const chip=document.createElement('div');
+      chip.className='word-chip-q';
+      chip.textContent=w;
+      chip.dataset.index=i;
+      chip.onclick=()=>addWord(chip,w,i);
+      chipsQ.appendChild(chip);
+    });
+
+    document.getElementById('answer-chips').innerHTML='<span class="answer-placeholder" id="chips-placeholder">Tap words below to add them here...</span>';
+    document.getElementById('hint-btn-wo').disabled=false;
+    document.getElementById('hint-btn-wo').textContent='💡 Hint';
+    document.getElementById('wordorder-area').style.display='block';
+
+  } else if(q.type==='fix'){
+    document.getElementById('q-type-label').textContent='✏️ Fix the Sentence';
+    document.getElementById('q-text').textContent='Find ALL mistakes and rewrite correctly:';
+    document.getElementById('q-wrong').textContent=q.wrong;
+    document.getElementById('q-wrong').style.display='flex';
+
+    const input=document.getElementById('answer-input');
+    input.value=''; input.className='answer-input'; input.disabled=false;
+    const hb=document.getElementById('hint-btn');
+    hb.disabled=false; hb.textContent='💡 Hint (-5pts)';
+    document.getElementById('input-area').style.display='block';
+    setTimeout(()=>input.focus(),100);
+
+  } else {
+    document.getElementById('q-type-label').textContent='🔵 Choose the Correct Sentence';
+    document.getElementById('q-text').textContent=q.question;
+
+    const area=document.getElementById('choices-area');
+    area.innerHTML=''; area.style.display='flex';
+    const letters=['a','b','c','d'];
+    q.choices.forEach((choice,i)=>{
+      const btn=document.createElement('button');
+      btn.className='choice-btn';
+      btn.innerHTML=`<span class="choice-letter">${letters[i]}</span>${choice}`;
+      btn.onclick=()=>checkChoice(i,btn);
+      area.appendChild(btn);
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════
+// WORD ORDER
+// ══════════════════════════════════════════════════
+function addWord(chip, word, index){
+  if(answered || chip.classList.contains('used')) return;
+  chip.classList.add('used');
+  selectedWords.push({word, index});
+
+  const container=document.getElementById('answer-chips');
+  const placeholder=document.getElementById('chips-placeholder');
+  if(placeholder) placeholder.remove();
+
+  const aChip=document.createElement('div');
+  aChip.className='answer-chip';
+  aChip.textContent=word;
+  aChip.dataset.index=index;
+  aChip.onclick=()=>removeWord(aChip, chip, index);
+  container.appendChild(aChip);
+}
+
+function removeWord(aChip, origChip, index){
+  if(answered) return;
+  selectedWords=selectedWords.filter(w=>w.index!==index);
+  aChip.remove();
+
+  // Re-enable original chip
+  document.querySelectorAll('.word-chip-q').forEach(c=>{
+    if(parseInt(c.dataset.index)===index) c.classList.remove('used');
+  });
+
+  if(document.getElementById('answer-chips').children.length===0){
+    document.getElementById('answer-chips').innerHTML='<span class="answer-placeholder" id="chips-placeholder">Tap words below to add them here...</span>';
+  }
+}
+
+function clearWordOrder(){
+  if(answered) return;
+  selectedWords=[];
+  document.getElementById('answer-chips').innerHTML='<span class="answer-placeholder" id="chips-placeholder">Tap words below to add them here...</span>';
+  document.querySelectorAll('.word-chip-q').forEach(c=>c.classList.remove('used'));
+}
+
+function useHintWO(){
+  if(answered || hintUsed) return;
+  hintUsed=true;
+  const q=questions[currentQ];
+  const hb=document.getElementById('hint-btn-wo');
+  hb.disabled=true; hb.textContent='💡 Used';
+  // Show first word
+  const firstWord=q.answer.split(' ')[0];
+  showFeedback('almost',`💡 Hint: The sentence starts with "${firstWord}"`,
+    'Continue building the rest of the sentence!');
+}
+
+function checkWordOrder(){
+  if(answered) return;
+  const q=questions[currentQ];
+  if(selectedWords.length===0){
+    document.getElementById('answer-chips').style.borderColor='var(--orange)';
+    setTimeout(()=>document.getElementById('answer-chips').style.borderColor='#CCCCCC',1000);
+    return;
+  }
+
+  answered=true;
+  const userSentence=selectedWords.map(w=>w.word).join(' ');
+  const isCorrect=userSentence.toLowerCase()===q.answer.toLowerCase();
+
+  if(isCorrect){
+    score+=hintUsed?5:10; correct++;
+    showFeedback('correct',`✅ Correct! +${hintUsed?5:10} points!`, q.explain);
+    if(correct%3===0) launchConfetti();
+  } else {
+    wrong++;
+    showFeedback('wrong','❌ Not quite! Check the word order!',
+      q.explain, `✅ Correct: "${q.answer}"`);
+  }
+  document.getElementById('score-display').textContent=score;
+  document.getElementById('next-btn').style.display='block';
+}
+
+// ══════════════════════════════════════════════════
+// TEXT INPUT
+// ══════════════════════════════════════════════════
+function useHint(){
+  if(answered||hintUsed) return;
+  hintUsed=true;
+  const q=questions[currentQ];
+  const hb=document.getElementById('hint-btn');
+  hb.disabled=true; hb.textContent='💡 Used';
+  const checks=q.checks || SECTION_RULES[currentSection].checks;
+  let hints=[];
+  if(checks.includes('capitals')) hints.push('Check capital letters!');
+  if(checks.includes('punctuation')) hints.push('Check the punctuation at the end!');
+  if(checks.includes('verbs')) hints.push('Check the verb form!');
+  if(checks.includes('order')) hints.push('Check the word order!');
+  const hDiv=document.getElementById('hint-text');
+  hDiv.textContent='💡 '+hints.join(' | ');
+  hDiv.style.display='block';
+}
+
+function checkAnswer(){
+  if(answered) return;
+  const q=questions[currentQ];
+  const input=document.getElementById('answer-input');
+  const userAnswer=input.value.trim();
+
+  if(!userAnswer){
+    input.style.borderColor='var(--yellow)';
+    input.placeholder='Please type your answer first! ✏️';
+    return;
+  }
+
+  answered=true;
+  input.disabled=true;
+
+  const checks=q.checks || SECTION_RULES[currentSection].checks;
+  const result=checkSection(userAnswer, q.answer, checks);
+
+  if(result.result==='correct'){
+    input.className='answer-input correct';
+    const pts=hintUsed?5:10;
+    score+=pts; correct++;
+    showFeedback('correct',
+      `✅ Correct! +${pts} points!`,
+      buildExplain(userAnswer, q.answer, checks),
+      null
+    );
+    if(correct%3===0) launchConfetti();
+
+  } else if(result.result==='almost'){
+    input.className='answer-input almost';
+    score+=5;
+    const pMark=norm(q.answer).slice(-1);
+    const pName=pMark==='.'?'period (.)':pMark==='?'?'question mark (?)':'exclamation mark (!)';
+    showFeedback('almost',
+      '🟡 Almost correct! +5 points',
+      `Don't forget the ${pName} at the end of every sentence!`,
+      `✅ Correct answer: "${q.answer}"`
+    );
+
+  } else {
+    input.className='answer-input wrong';
+    wrong++;
+
+    // Show word-by-word analysis
+    const analysis=getWordAnalysis(userAnswer, q.answer);
+    const chips=document.getElementById('word-chips-check');
+    chips.innerHTML='';
+    analysis.forEach(w=>{
+      const chip=document.createElement('span');
+      chip.className='wchip '+(w.ok?'ok':'bad');
+      chip.textContent=w.word+(w.ok?' ✓':' ✗');
+      chips.appendChild(chip);
+    });
+    document.getElementById('word-analysis').style.display='block';
+
+    // Find specific wrong words for better message
+    const wrongWords = analysis.filter(w=>!w.ok).map(w=>w.word);
+    let extraMsg = '';
+    if(wrongWords.length > 0){
+      // Check if word has wrong capital (uppercase when should be lower)
+      wrongWords.forEach(w => {
+        const wLower = w.toLowerCase();
+        // Find matching word in correct answer
+        const cWords = norm(q.answer).replace(/[.?!]$/, '').split(' ');
+        const match = cWords.find(cw => cw.toLowerCase() === wLower);
+        if(match && match[0] === match[0].toLowerCase() && w[0] === w[0].toUpperCase()){
+          extraMsg = `"${w}" should be lowercase — it is not a name or special word!`;
+        } else if(match && match[0] === match[0].toUpperCase() && w[0] === w[0].toLowerCase()){
+          extraMsg = `"${w}" needs a capital letter!`;
+        }
+      });
+    }
+
+    showFeedback('wrong',
+      '❌ Not quite!',
+      extraMsg || buildExplain(userAnswer, q.answer, checks),
+      `✅ Correct answer: "${q.answer}"`
+    );
+  }
+
+  document.getElementById('score-display').textContent=score;
+  document.getElementById('next-btn').style.display='block';
+}
+
+function buildExplain(user, correct, checks){
+  // Build a simple explanation based on what's different
+  const u = norm(user);
+  const c = norm(correct);
+  const uStrip = stripPunct(u);
+  const cStrip = stripPunct(c);
+
+  let parts=[];
+
+  // Check capitals
+  if(checks.includes('capitals') && uStrip.toLowerCase()===cStrip.toLowerCase() && uStrip!==cStrip){
+    parts.push('Check your capital letters!');
+  }
+  // Check punctuation
+  if(checks.includes('punctuation')){
+    const pMark=c.slice(-1);
+    const pName=pMark==='.'?'period (.)':pMark==='?'?'question mark (?)':'exclamation mark (!)';
+    if(u.slice(-1)!==pMark) parts.push(`Add a ${pName} at the end!`);
+  }
+  // Check verbs
+  if(checks.includes('verbs') && uStrip.toLowerCase()!==cStrip.toLowerCase()){
+    parts.push('Check the verb form!');
+  }
+  // Check word order
+  if(checks.includes('order')){
+    const uWords=uStrip.toLowerCase().split(' ').sort().join(' ');
+    const cWords=cStrip.toLowerCase().split(' ').sort().join(' ');
+    if(uWords!==cWords) parts.push('Check the word order!');
+  }
+
+  return parts.length>0 ? parts.join(' | ') : 'Check all the rules carefully!';
+}
+
+// ══════════════════════════════════════════════════
+// MULTIPLE CHOICE
+// ══════════════════════════════════════════════════
+function checkChoice(index, btn){
+  if(answered) return;
+  answered=true;
+  const q=questions[currentQ];
+  const isCorrect=index===q.answer;
+
+  document.querySelectorAll('.choice-btn').forEach((b,i)=>{
+    b.disabled=true;
+    if(i===q.answer) b.className='choice-btn correct-choice';
+    else if(b===btn&&!isCorrect) b.className='choice-btn wrong-choice';
+  });
+
+  if(isCorrect){
+    score+=10; correct++;
+    showFeedback('correct','✅ Correct! +10 points!', q.explain||'');
+    if(correct%3===0) launchConfetti();
+  } else {
+    wrong++;
+    showFeedback('wrong','❌ Not quite!',
+      q.explain||'Check all the rules carefully!',
+      `✅ Correct answer: "${q.choices[q.answer]}"`);
+  }
+  document.getElementById('score-display').textContent=score;
+  document.getElementById('next-btn').style.display='block';
+}
+
+// ══════════════════════════════════════════════════
+// FEEDBACK
+// ══════════════════════════════════════════════════
+function showFeedback(type, title, explain, extra){
+  const fb=document.getElementById('feedback');
+  fb.className='feedback show '+(type==='correct'?'correct-fb':type==='almost'?'almost-fb':'wrong-fb');
+  document.getElementById('fb-title').textContent=title;
+  document.getElementById('fb-explain').textContent=explain||'';
+  const fc=document.getElementById('fb-correct');
+  if(extra){ fc.textContent=extra; fc.style.display='block'; }
+  else fc.style.display='none';
+}
+
+function nextQuestion(){
+  currentQ++;
+  if(currentQ>=questions.length) showResults();
+  else loadQuestion();
+}
+
+// ══════════════════════════════════════════════════
+// RESULTS
+// ══════════════════════════════════════════════════
+function showResults(){
+  const total=questions.length;
+  const pct=Math.round((correct/total)*100);
+  document.getElementById('final-score').textContent=score;
+  document.getElementById('stat-correct').textContent=correct;
+  document.getElementById('stat-wrong').textContent=wrong;
+  document.getElementById('stat-pct').textContent=pct+'%';
+
+  let stars,message;
+  if(pct===100){stars='⭐⭐⭐⭐⭐';message='🏆 PERFECT! Amazing work!';launchConfetti();}
+  else if(pct>=80){stars='⭐⭐⭐⭐';message='🎉 Excellent! Well done!';launchConfetti();}
+  else if(pct>=60){stars='⭐⭐⭐';message='👍 Good job! Keep practicing!';}
+  else if(pct>=40){stars='⭐⭐';message='💪 Keep trying, you can do it!';}
+  else{stars='⭐';message='📚 Review the section and try again!';}
+
+  document.getElementById('stars-display').textContent=stars;
+  document.getElementById('result-message').textContent=message;
+  showScreen('screen-results');
+}
+
+function retrySection(){ startSection(currentSection); }
+function backToMenu(){ showScreen('screen-select'); }
+function exitQuiz(){
+  if(!answered && currentQ>0){
+    if(!confirm('⚠️ Are you sure you want to exit? Progress will be lost!')) return;
+  }
+  backToMenu();
+}
+
+// ══════════════════════════════════════════════════
+// CONFETTI
+// ══════════════════════════════════════════════════
+function launchConfetti(){
+  const wrap=document.getElementById('confetti');
+  wrap.innerHTML='';
+  const colors=['#2BBFB0','#FFD94A','#FF6B6B','#7B5EA7','#27AE60','#1B3A6B'];
+  for(let i=0;i<60;i++){
+    const p=document.createElement('div');
+    p.className='confetti-piece';
+    p.style.cssText=`left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;border-radius:${Math.random()>0.5?'50%':'2px'};animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*0.5}s;`;
+    wrap.appendChild(p);
+  }
+  setTimeout(()=>wrap.innerHTML='',3500);
+}
+</script>
+</body>
+</html>
